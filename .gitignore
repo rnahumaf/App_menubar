@@ -1,0 +1,18 @@
+# Build artifacts (C#)
+**/bin/
+**/obj/
+
+# VS / VSCode
+.vs/
+.vscode/
+
+# Logs locais
+debug/debug_log/
+*.log
+
+# macOS
+.DS_Store
+
+# Build output do nosso workflow
+build/
+mac/build/
