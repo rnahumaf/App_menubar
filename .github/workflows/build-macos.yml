@@ -1,0 +1,86 @@
+name: build-macos
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: macos-12
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build .app (x86_64, macOS 12)
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          APP_NAME="TinyClipboardNormalizer"
+          ROOT="$(pwd)"
+
+          SRC_DIR="$ROOT/mac/TinyClipboardNormalizer/Sources"
+          INFO_PLIST="$ROOT/mac/Info.plist"
+
+          BUILD_DIR="$ROOT/build"
+          APP_DIR="$BUILD_DIR/${APP_NAME}.app"
+          CONTENTS_DIR="$APP_DIR/Contents"
+          MACOS_DIR="$CONTENTS_DIR/MacOS"
+          RES_DIR="$CONTENTS_DIR/Resources"
+          BIN_PATH="$MACOS_DIR/$APP_NAME"
+
+          rm -rf "$BUILD_DIR"
+          mkdir -p "$MACOS_DIR" "$RES_DIR"
+
+          if [[ ! -f "$INFO_PLIST" ]]; then
+            echo "ERROR: Info.plist not found at: $INFO_PLIST"
+            exit 1
+          fi
+
+          # SDK / target
+          SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"
+
+          echo "SDKROOT=$SDKROOT"
+          echo "Compiling sources in: $SRC_DIR"
+
+          # Compila e linka com Cocoa (AppKit/Foundation)
+          swiftc \
+            "$SRC_DIR"/*.swift \
+            -o "$BIN_PATH" \
+            -sdk "$SDKROOT" \
+            -target x86_64-apple-macos12.0 \
+            -framework Cocoa
+
+          chmod +x "$BIN_PATH"
+
+          # Copia Info.plist para o bundle
+          cp "$INFO_PLIST" "$CONTENTS_DIR/Info.plist"
+
+          # Valida o plist (falha o build se estiver inválido)
+          /usr/bin/plutil -lint "$CONTENTS_DIR/Info.plist"
+
+          echo "Built: $APP_DIR"
+          file "$BIN_PATH" || true
+
+      - name: Zip .app
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP_NAME="TinyClipboardNormalizer"
+          ZIP_NAME="${APP_NAME}-macos12-x86_64.zip"
+
+          rm -f "$ZIP_NAME"
+
+          # ditto é o jeito mais "correto" de zipar bundle no macOS
+          ditto -c -k --sequesterRsrc --keepParent "build/${APP_NAME}.app" "$ZIP_NAME"
+
+          ls -lah "$ZIP_NAME"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TinyClipboardNormalizer-macos12-x86_64
+          path: TinyClipboardNormalizer-macos12-x86_64.zip
