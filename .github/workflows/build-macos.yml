@@ -23,7 +23,7 @@ jobs:
           ROOT="$(pwd)"
 
           SRC_DIR="$ROOT/mac/TinyClipboardNormalizer/Sources"
-          INFO_PLIST="$ROOT/mac/Info.plist"
+          INFO_PLIST="$ROOT/mac/TinyClipboardNormalizer/Info.plist"
 
           BUILD_DIR="$ROOT/build"
           APP_DIR="$BUILD_DIR/${APP_NAME}.app"
